@@ -1,5 +1,7 @@
 from django.contrib.auth import get_user_model, login, logout
 from rest_framework.authentication import SessionAuthentication
+from rest_framework_simplejwt.tokens import RefreshToken
+
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from .serializers import (UserLoginSerializer, 
@@ -16,17 +18,21 @@ class UserRegister(APIView):
 
     def post(self, request):
         clean_data = custom_validation(request.data)
+        print(clean_data)
         serializer = UserRegisterSerializer(data=clean_data)
 
         if serializer.is_valid(raise_exception=True):
              user = serializer.create(clean_data)
 
-             if user:
+        print("validation error: ", serializer.errors)
+        
+        if user:
                  return Response(
                        {'name': user.name,
                         'email': user.email,
                         'phone_number': user.phone_number,
-                        'account_number': user.account_number}
+                        'account_number': user.account_number,
+                        'transaction_pin': user.transaction_pin}
                        , status=status.HTTP_201_CREATED)
         
         return Response(status=status.HTTP_400_BAD_REQUEST)
@@ -38,6 +44,7 @@ class UserLogin(APIView):
 
     def post(self, request):
         data = request.data
+        print(data)
         
         serializer = UserLoginSerializer(data=data)
 
@@ -45,10 +52,17 @@ class UserLogin(APIView):
             user = serializer.check_user(data)
             login(request, user)
 
-            return Response(
+            refresh = RefreshToken.for_user(user)
+            access_token = str(refresh.access_token)
+            
+            try:
+                 return Response(
                   {'email': user.email,
-                   'account_number': user.account_number}, status=status.HTTP_200_OK)
-
+                   'account_number': user.account_number,
+                   'access_token': access_token}, status=status.HTTP_200_OK)
+           
+            except Exception as e:
+                  return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class UserLogout(APIView):
 	permission_classes = (permissions.AllowAny,)
@@ -80,6 +94,7 @@ class BalanceTransferView(APIView):
             sender = request.user
             receiver_account_number = request.data.get('receiver_account_number')
             amount = int(request.data.get('amount'))
+            transaction_pin = request.data.get('transaction_pin')
 
             try:
                   receiver = AppUser.objects.get(account_number=receiver_account_number)
@@ -89,6 +104,9 @@ class BalanceTransferView(APIView):
             
             if sender.account_balance < amount:
                   return Response({'error': 'Insufficient funds'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            if transaction_pin != sender.transaction_pin:
+                 return Response({'error': 'Invalid Transaction Pin'})
             
             #update account balance
             sender.account_balance -= amount

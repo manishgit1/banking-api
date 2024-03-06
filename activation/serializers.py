@@ -7,9 +7,11 @@ from .models import AppUser, Transaction, BankAccount
 class UserRegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
     account_number = serializers.CharField(write_only=True)
+    transaction_pin = serializers.CharField(max_length=4)
+
     class Meta:
         model =  AppUser
-        fields = ['email', 'name', 'password', 'phone_number', 'account_number']
+        fields = ['email', 'name', 'password', 'phone_number', 'account_number', 'transaction_pin']
     
     def validate_account_number(self, value):
         try:
@@ -25,26 +27,50 @@ class UserRegisterSerializer(serializers.ModelSerializer):
                                          password=validated_data['password'],
                                          name=validated_data['name'],
                                          phone_number=validated_data['phone_number'],
-                                         account_number = validated_data['account_number'],)   
+                                         account_number = validated_data['account_number'],
+                                         transaction_pin = validated_data['transaction_pin'])   
 
 
         return user 
     
 
 class UserLoginSerializer(serializers.Serializer):
-    email = serializers.EmailField()
+    email = serializers.EmailField(required=False)
     password = serializers.CharField()
+    phone_number = serializers.CharField(required=False)
 
     def check_user(self, validated_data):
-        user = authenticate(username=validated_data['email'], password=validated_data['password'])
-        if not user:
-            raise serializers.ValidationError('User not found')
-        return user
 
+        email = validated_data.get('email')
+        phone_number = validated_data.get('phone_number')
+        password = validated_data['password']
+
+
+        if not email and not phone_number:
+            raise serializers.ValidationError('Either email or phone number is required..')
+        
+        if email:
+            user = authenticate(username=email, password=password)
+            if user:
+                return user
+            
+
+        if phone_number:
+          try:  
+             user = AppUser.objects.get(phone_number=phone_number)
+             user = authenticate(username=user.email, password = password)  
+             if user:
+                return user  
+          
+          except AppUser.DoesNotExist:
+              raise serializers.ValidationError('Invalid credentials!')
+
+        return serializers.ValidationError('Invalid credentials!')    
+        
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = AppUser
-        fields = ('email', 'name', 'phone_number', 'account_number')
+        fields = ('email', 'name', 'phone_number', 'account_number', 'account_balance')
 
 
 class TransactionSerializer(serializers.ModelSerializer):
@@ -52,6 +78,7 @@ class TransactionSerializer(serializers.ModelSerializer):
     receiver = serializers.StringRelatedField(source='receiver.name')
     sender_account_number  = serializers.StringRelatedField(source='sender.account_number')
     receiver_account_number = serializers.StringRelatedField(source='receiver.account_number')
+   # transaction_pin = serializers.StringRelatedField(source='sender.transaction_pin')
 
     class Meta:
         model = Transaction

@@ -25,7 +25,10 @@ SECRET_KEY = 'django-insecure-6&gp_+##jp=3iybv!wu!up383sy!n%+z%4b+%$_059%pf97$=w
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+# settings.py
+
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '192.168.1.77']
+
 
 
 # Application definition
@@ -39,7 +42,24 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'activation.apps.ActivationConfig',
     'rest_framework',
+    'corsheaders',
+    'rest_framework.authtoken',
+
+
     
+]
+
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ],
+}
+
+AUTHENTICATION_CLASSES = [
+    'django.contrib.auth.backends.ModelBackend',
+    'django.contrib.auth.backends.AllowAllUsersModelBackend',
 ]
 
 MIDDLEWARE = [
@@ -47,10 +67,22 @@ MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+
+
+CORS_ALLOWED_ORIGINS = [
+      "http://localhost:3000",
+        
+]
+CORS_ALLOW_ALL_ORIGINS = True
+
+CORS_ALLOW_CREDENTIALS = True
 
 ROOT_URLCONF = 'backend.urls'
 
@@ -130,3 +162,12 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+SIMPLE_JWT = {
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'SIGNING_KEY': SECRET_KEY,
+    'ALGORITHM': 'HS256',
+    'VERIFYING_KEY': None,
+    'AUTH_HEADER_TYPES': ('Bearer',),
+}
