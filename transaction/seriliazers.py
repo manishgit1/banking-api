@@ -5,11 +5,7 @@ from .models import Transaction
 #Serializer for transaction details
 class TransactionSerializer(serializers.ModelSerializer):
     sender = serializers.StringRelatedField(source='sender.name')
-    receiver = serializers.StringRelatedField(source='receiver.name')
-    #sender_account_number  = serializers.StringRelatedField(source='sender.account_number')
-    #receiver_account_number = serializers.StringRelatedField(source='receiver.account_number')
-   
-   
+    receiver = serializers.StringRelatedField(source='receiver.name')  
     sender_account_number = serializers.SerializerMethodField()
     receiver_account_number = serializers.SerializerMethodField()
 
