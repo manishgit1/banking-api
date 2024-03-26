@@ -2,7 +2,6 @@
 from django.db import models
 from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import PermissionsMixin, AbstractBaseUser
-import uuid
 
 class AppUserManager(BaseUserManager):
     def create_user(self, email, name, password, phone_number, account_number, transaction_pin):
@@ -50,6 +49,9 @@ class AppUser(AbstractBaseUser, PermissionsMixin):
     account_number = models.CharField(max_length=30, default='', unique=True, blank=True, null=True)
     account_balance= models.DecimalField(max_digits=10, decimal_places=2, default=0.0)
     transaction_pin = models.CharField( null=False, max_length = 4)
+    otp = models.CharField(max_length = 10, blank=True, null=True)
+    is_verified = models.BooleanField(default=False)
+
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['name', 'phone_number', 'account_number', 'transaction_pin']
     objects = AppUserManager()
@@ -83,12 +85,8 @@ class BankAccount(models.Model):
 
 
 
-class Transaction(models.Model):
-     transaction_id = models.AutoField(primary_key=True, unique=True)
-     sender = models.ForeignKey(AppUser, related_name='sent_transactions', on_delete=models.CASCADE, default='')
-     receiver = models.ForeignKey(AppUser, related_name='received_transactions', on_delete=models.CASCADE, default='')
-     amount = models.DecimalField(max_digits=10, decimal_places=2)
-     timestamp = models.DateTimeField(auto_now_add=True)
+
+
 
 
     

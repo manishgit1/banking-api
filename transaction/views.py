@@ -9,6 +9,8 @@ from rest_framework import status, permissions
 from django.db import models
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
+from rest_framework.authtoken.models import Token
+from rest_framework.authentication import TokenAuthentication
 
 
 
@@ -17,7 +19,7 @@ from django.shortcuts import get_object_or_404
 #logic for handling fund transfers
 class BalanceTransferView(APIView):
       permission_classes = (permissions.IsAuthenticated,)
-      authentication_classes = (SessionAuthentication, )
+      authentication_classes = (TokenAuthentication, )
      
       def post(self, request):
             #balance transfer logic here
@@ -28,33 +30,53 @@ class BalanceTransferView(APIView):
             receiver_name = request.data['receiver_name']
             receiver_account_number = request.data['receiver_account_number']
             amount = int(request.data['amount'])
-            transaction_pin = request.data['transaction_pin']
+            transaction_pin = str(request.data['transaction_pin'])
             remarks = request.data.get('remarks')
-           # print(sender)
-
-         #   print(remarks)
+        #    access_token = request.headers.get('Authorization')
+            print( receiver_name, receiver_account_number, amount, transaction_pin, remarks, sender.transaction_pin)
+            
+            print(type(transaction_pin))
+           # print(remarks)
           #  print(receiver)
+            print("sender name>>")
+            #print(sender.name)
+
 
 
             try:
                   receiver = get_object_or_404(AppUser, account_number=receiver_account_number, name=receiver_name)
+               #   sender = AppUser.objects.get(transaction_pin=transaction_pin)
+                  #print(receiver)
+                  print(f"receiver name: {receiver.name}")
 
             except AppUser.DoesNotExist:
-                  return Response({'error': 'Invalid Transaction!! '}, status=status.HTTP_404_NOT_FOUND)
+                  return Response({'error': 'Recipient not found!! '}, status=status.HTTP_404_NOT_FOUND)
+            
+            if sender.account_number == receiver.account_number:
+                  return Response({'error': 'Transaction not allowed!!!'}, status=status.HTTP_400_BAD_REQUEST)
             
             if sender.account_balance < amount:
                   return Response({'error': 'Insufficient funds'}, status=status.HTTP_400_BAD_REQUEST)
             
             if transaction_pin != sender.transaction_pin:
-                 return Response({'error': 'Invalid Transaction Pin'})
+                 return Response({'error': 'Invalid Transaction Pin'}, status=status.HTTP_401_UNAUTHORIZED)
             
             #update account balance
             sender.account_balance -= amount
             receiver.account_balance += amount
 
+            print("after transaction")
+            print(f"sender balance {sender.account_balance}")
+            print(f"receiver balance {receiver.account_balance}")
+
+
+
             #create transaction record
             transaction = Transaction.objects.create(sender=sender, receiver=receiver, amount=amount, remarks=remarks)
             
+            print(sender.account_balance)
+            print(receiver.account_balance)
+            print(transaction.amount)
 
             sender.save()
             receiver.save()
@@ -71,13 +93,16 @@ class BalanceTransferView(APIView):
             #       'date': transaction.timestamp
             # }, status=status.HTTP_201_CREATED)
 
+          #  token = Token.objects.get(user=request.user)
+            
+
             return Response(serializer.data, status=status.HTTP_201_CREATED)
       
 
 #return the current balance of user 
 class BalanceCheckView(APIView):
     permission_classes = (permissions.IsAuthenticated,)
-    authentication_classes = (SessionAuthentication,)
+    authentication_classes = (TokenAuthentication,)
 
     def get(self, request):
           balance = request.user.account_balance
@@ -87,6 +112,7 @@ class BalanceCheckView(APIView):
 #return transaction records of user
 class TransactionHistoryView(APIView):
       permission_classes = (permissions.IsAuthenticated,)
+      authentication_classes = (TokenAuthentication,)
 
       def get(self, request):
             user = request.user
@@ -102,6 +128,7 @@ class TransactionHistoryView(APIView):
 
 class TransactionSummary(APIView):
       permission_classes = (permissions.IsAuthenticated,)
+      authentication_classes = (TokenAuthentication,)
 
 
       def get(self,request):

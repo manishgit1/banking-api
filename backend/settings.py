@@ -27,7 +27,7 @@ DEBUG = True
 
 # settings.py
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '192.168.1.77']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '192.168.1.14',]
 
 
 
@@ -44,6 +44,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'rest_framework.authtoken',
+    'transaction.apps.TransactionConfig',
+    'knox',
 
 
     
@@ -54,6 +56,7 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.SessionAuthentication',
         'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.authentication.TokenAuthentication',
     ],
 }
 
@@ -61,6 +64,13 @@ AUTHENTICATION_CLASSES = [
     'django.contrib.auth.backends.ModelBackend',
     'django.contrib.auth.backends.AllowAllUsersModelBackend',
 ]
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587 
+EMAIL_USE_TLS = True  # Set to True if using TLS/SSL
+EMAIL_HOST_USER = 'poudelmanish150@gmail.com'  # Your email address
+EMAIL_HOST_PASSWORD = 'Fuckbitch@123'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
